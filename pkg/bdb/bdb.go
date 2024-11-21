@@ -68,7 +68,8 @@ func (db *BerkeleyDB) Read() <-chan dbi.Entry {
 		defer close(entries)
 
 		for pageNum := uint32(0); pageNum <= db.HashMetadata.LastPageNo; pageNum++ {
-			pageData, err := slice(db.file, int(db.HashMetadata.PageSize))
+			pageData := make([]byte, int(db.HashMetadata.PageSize))
+			err := readFull(pageData, db.file)
 			if err != nil {
 				entries <- dbi.Entry{
 					Err: err,

@@ -49,6 +49,7 @@ func HashPageValueContent(db *os.File, pageData []byte, hashPageIndex uint16, pa
 
 	var hashValue []byte
 
+	currentPageBuff := make([]byte, pageSize)
 	for currentPageNo := entry.PageNo; currentPageNo != 0; {
 		pageStart := pageSize * currentPageNo
 
@@ -57,7 +58,7 @@ func HashPageValueContent(db *os.File, pageData []byte, hashPageIndex uint16, pa
 			return nil, xerrors.Errorf("failed to seek to HashPageValueContent (page=%d): %w", currentPageNo, err)
 		}
 
-		currentPageBuff, err := slice(db, int(pageSize))
+		err = readFull(currentPageBuff, db)
 		if err != nil {
 			return nil, xerrors.Errorf("failed to read page=%d: %w", currentPageNo, err)
 		}
@@ -110,14 +111,13 @@ func HashPageValueIndexes(data []byte, entries uint16, swapped bool) ([]uint16, 
 	return hashIndexValues, nil
 }
 
-func slice(reader io.Reader, n int) ([]byte, error) {
-	newBuff := make([]byte, n)
-	numRead, err := reader.Read(newBuff)
+func readFull(p []byte, reader io.Reader) error {
+	numRead, err := reader.Read(p)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to read page: %w", err)
+		return xerrors.Errorf("failed to read page: %w", err)
 	}
-	if numRead != n {
-		return nil, xerrors.Errorf("short page size: %d!=%d", n, numRead)
+	if numRead != len(p) {
+		return xerrors.Errorf("short page size: %d!=%d", len(p), numRead)
 	}
-	return newBuff, nil
+	return nil
 }
